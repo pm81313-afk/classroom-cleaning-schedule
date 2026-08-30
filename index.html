@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌸 班級掃地工作分配表 🧹</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Confetti Celebration -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            macaron: {
+              pink: '#FFD1DC',
+              pinkDark: '#F472B6',
+              blue: '#BAE6FD',
+              blueDark: '#38BDF8',
+              green: '#C6F6D5',
+              greenDark: '#4ADE80',
+              purple: '#E9D8FD',
+              purpleDark: '#C084FC',
+              yellow: '#FEF08A',
+              yellowDark: '#FACC15',
+              peach: '#FED7AA',
+              peachDark: '#FB923C',
+              slate: '#475569'
+            }
+          },
+          fontFamily: {
+            sans: ['"Noto Sans TC"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    /* 自訂馬卡龍柔和滾動條 */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #faf5f0;
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #fbcfe8;
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #f472b6;
+    }
+    
+    .slot-drag-over {
+      border-color: #ec4899 !important;
+      background-color: #fdf2f8 !important;
+      transform: scale(1.03);
+    }
+
+    .selected-student-badge {
+      outline: 3px solid #ec4899;
+      outline-offset: 2px;
+      animation: pulse-ring 1.5s infinite;
+    }
+
+    @keyframes pulse-ring {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+    }
+
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      body {
+        background: white !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-[#FCF9F5] text-slate-700 min-h-screen flex flex-col font-sans selection:bg-pink-200">
+
+  <!-- 頂部導覽列 / 標題區 -->
+  <header class="bg-white/85 backdrop-blur-md sticky top-0 z-30 shadow-sm border-b border-pink-100 no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- 標題與班級名稱 -->
+      <div class="flex items-center space-x-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-pink-300 via-purple-300 to-sky-300 flex items-center justify-center text-2xl shadow-inner select-none">
+          ✨
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl sm:text-2xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 bg-clip-text text-transparent">
+              班級掃地工作分配表
+            </h1>
+            <span id="classNameBadge" onclick="promptChangeClassName()" class="text-xs px-2.5 py-0.5 rounded-full bg-pink-100 hover:bg-pink-200 text-pink-700 font-medium cursor-pointer transition border border-pink-200" title="點擊修改班級名稱">
+              五年一班 ✏️
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">💡 支援滑鼠拖拉，或「先點選名字、再點選格子」直接填入！</p>
+        </div>
+      </div>
+
+      <!-- 頂部功能操作區 -->
+      <div class="flex items-center flex-wrap gap-2 text-sm">
+        <!-- 核心設定精靈按鈕 -->
+        <button onclick="openModal('quickSetupModal')" class="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400 hover:from-pink-500 hover:to-indigo-500 text-white rounded-xl font-medium transition active:scale-95 shadow-sm">
+          <span>⚙️</span> 自訂名單與工作
+        </button>
+
+        <button onclick="openModal('addSingleDutyModal')" class="flex items-center gap-1 px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-xl font-medium transition active:scale-95">
+          <span>➕</span> 新增項目
+        </button>
+
+        <button onclick="randomAssignRemaining()" class="flex items-center gap-1 px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-xl font-medium transition active:scale-95" title="將剩餘未指派的學生隨機抽籤填入空缺">
+          <span>🎲</span> 隨機抽籤
+        </button>
+
+        <button onclick="clearAllAssignments()" class="flex items-center gap-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-medium transition active:scale-95" title="清空目前的分配，學生全部移回待分配池">
+          <span>🔄</span> 清空分配
+        </button>
+
+        <button onclick="window.print()" class="flex items-center gap-1 px-3 py-2 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded-xl font-medium transition active:scale-95">
+          <span>🖨️</span> 列印表單
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主體區域 -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex-1 w-full flex flex-col lg:flex-row gap-6">
+
+    <!-- 左側：待分配學生池 (Students Pool) -->
+    <section class="lg:w-80 xl:w-96 flex-shrink-0 flex flex-col bg-white rounded-3xl p-5 shadow-sm border border-slate-100 no-print">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
+            <span>🎒</span> 待分配學生
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">點選或拖曳姓名至右側工作格</p>
+        </div>
+        <div class="flex items-center gap-1">
+          <span id="unassignedCountBadge" class="px-2.5 py-1 text-xs font-bold rounded-full bg-pink-100 text-pink-600">
+            剩餘 0 人
+          </span>
+        </div>
+      </div>
+
+      <!-- 快速搜尋過濾 -->
+      <div class="mt-3 relative">
+        <input 
+          type="text" 
+          id="studentSearchInput" 
+          placeholder="🔍 搜尋座號或姓名..." 
+          oninput="renderStudentPool()"
+          class="w-full text-xs px-3 py-2 pl-8 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-300 transition"
+        >
+        <span class="absolute left-2.5 top-2.5 text-xs text-slate-400">🔍</span>
+      </div>
+
+      <!-- 學生標籤拖曳回收區 (Drop zone) -->
+      <div 
+        id="studentPoolContainer"
+        class="mt-4 flex-1 min-h-[220px] max-h-[calc(100vh-290px)] overflow-y-auto p-3 bg-gradient-to-b from-slate-50/80 to-pink-50/40 rounded-2xl border-2 border-dashed border-pink-200/70 transition"
+        ondragover="allowDrop(event)" 
+        ondrop="dropToPool(event)"
+        ondragenter="this.classList.add('slot-drag-over')"
+        ondragleave="this.classList.remove('slot-drag-over')"
+      >
+        <div id="studentPool" class="flex flex-wrap gap-2">
+          <!-- 學生標籤透過 JS 動態注入 -->
+        </div>
+      </div>
+
+      <!-- 便捷小工具 -->
+      <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+        <span>全班總人數：<b id="totalStudentsStat" class="text-slate-800">0</b> 人</span>
+        <button onclick="openModal('quickSetupModal')" class="text-pink-600 hover:text-pink-700 font-medium underline flex items-center gap-1">
+          ✏️ 編輯名單
+        </button>
+      </div>
+    </section>
+
+    <!-- 右側：掃地工作卡片區 (Duties Grid) -->
+    <section class="flex-1 flex flex-col">
+      
+      <!-- 狀態總覽橫條 -->
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4 bg-white/80 backdrop-blur-xs p-3.5 rounded-2xl border border-slate-100 shadow-xs">
+        <div class="flex items-center gap-4 text-xs font-medium text-slate-600">
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-purple-400"></span>
+            <span>工作項目：<strong id="dutyTotalTypes" class="text-slate-800">0</strong> 區</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
+            <span>總需求人數：<strong id="dutyTotalQuota" class="text-slate-800">0</strong> 人</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-pink-400"></span>
+            <span>已分配：<strong id="dutyAssignedCount" class="text-pink-600">0</strong> 人</span>
+          </div>
+        </div>
+        
+        <!-- 區塊篩選按鈕 (全部 / 內掃區 / 外掃區) -->
+        <div class="flex items-center gap-1.5 bg-slate-100/80 p-1 rounded-xl text-xs font-semibold no-print">
+          <button onclick="filterArea('all')" id="filter-btn-all" class="px-3 py-1 rounded-lg bg-white text-purple-600 shadow-xs transition">全部</button>
+          <button onclick="filterArea('內掃區')" id="filter-btn-inner" class="px-3 py-1 rounded-lg text-slate-500 hover:text-purple-600 transition">🏫 內掃區</button>
+          <button onclick="filterArea('外掃區')" id="filter-btn-outer" class="px-3 py-1 rounded-lg text-slate-500 hover:text-purple-600 transition">🌳 外掃區</button>
+        </div>
+
+        <div id="overallProgressText" class="text-xs font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-100">
+          進度 0%
+        </div>
+      </div>
+
+      <!-- 工作卡片網格 -->
+      <div id="dutiesGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 items-start">
+        <!-- 由 JavaScript 動態生成馬卡龍工作卡片 -->
+      </div>
+    </section>
+  </main>
+
+  <!-- 浮動提示 Toast -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-sm">
+    <span id="toastIcon">✨</span>
+    <span id="toastMsg">操作成功</span>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 彈窗 1：自訂名單與工作設定精靈 (Quick Setup) -->
+  <!-- ========================================== -->
+  <div id="quickSetupModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm hidden p-4">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-purple-100 flex flex-col max-h-[92vh]">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+            <span>⚙️</span> 班級自訂設定精靈
+          </h3>
+          <p class="text-xs text-slate-400 mt-0.5">快速批次貼上您的學生名單與掃地項目</p>
+        </div>
+        <button onclick="closeModal('quickSetupModal')" class="text-slate-400 hover:text-slate-600 text-xl font-bold p-1">✕</button>
+      </div>
+
+      <div class="mt-4 flex-1 overflow-y-auto space-y-5 text-sm pr-1">
+        
+        <!-- 班級名稱輸入 -->
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">班級名稱</label>
+          <input 
+            type="text" 
+            id="setupClassNameInput" 
+            placeholder="例如：五年三班、七年二班..." 
+            class="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-pink-300 focus:outline-none"
+          >
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- 學生名單編輯區 -->
+          <div class="flex flex-col">
+            <div class="flex items-center justify-between mb-1">
+              <label class="font-semibold text-slate-700">👥 學生名單（每行一位）</label>
+              <span id="setupStudentsCount" class="text-xs text-pink-600 font-bold">0 人</span>
+            </div>
+            <textarea 
+              id="setupStudentsTextarea" 
+              rows="9" 
+              class="w-full text-xs p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-pink-300 focus:outline-none font-mono resize-none leading-relaxed"
+              placeholder="01 王小明&#10;02 李小華&#10;03 張大同..."
+              oninput="updateSetupCounts()"
+            ></textarea>
+            <div class="flex items-center gap-2 mt-2">
+              <button type="button" onclick="generateNumberRoster(25)" class="text-[11px] px-2 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 rounded-lg border border-pink-200">
+                + 產生 1~25 號
+              </button>
+              <button type="button" onclick="generateNumberRoster(30)" class="text-[11px] px-2 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 rounded-lg border border-pink-200">
+                + 產生 1~30 號
+              </button>
+            </div>
+          </div>
+
+          <!-- 工作項目編輯區 -->
+          <div class="flex flex-col">
+            <div class="flex items-center justify-between mb-1">
+              <label class="font-semibold text-slate-700">🧹 掃地工作與人數</label>
+              <span id="setupDutiesQuotaCount" class="text-xs text-purple-600 font-bold">0 項目 (0 人)</span>
+            </div>
+            <textarea 
+              id="setupDutiesTextarea" 
+              rows="9" 
+              class="w-full text-xs p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-300 focus:outline-none font-mono resize-none leading-relaxed"
+              placeholder="黑板與講台 (2)&#10;教室掃地 (3)&#10;教室拖地 (2)&#10;垃圾與回收 (2)&#10;走廊洗手台 (3)&#10;擦拭窗戶 (2)&#10;外掃區落葉 (4)"
+              oninput="updateSetupCounts()"
+            ></textarea>
+            <div class="flex items-center gap-2 mt-2">
+              <button type="button" onclick="loadDefaultSchoolDuties()" class="text-[11px] px-2 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg border border-purple-200">
+                📋 載入學校常見標準工作
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-amber-50 p-3 rounded-xl border border-amber-100 text-xs text-amber-800">
+          💡 <b>工作輸入格式提示：</b>輸入「工作名稱 (人數)」即可自動解析，例如：<code class="bg-amber-100/70 px-1 rounded">教室掃地 (3)</code> 或 <code class="bg-amber-100/70 px-1 rounded">倒垃圾 2人</code> 或直接輸入 <code class="bg-amber-100/70 px-1 rounded">黑板講台</code>（預設 2 人）。
+        </div>
+      </div>
+
+      <div class="mt-6 pt-3 border-t border-slate-100 flex items-center justify-between">
+        <button onclick="clearAllData()" class="text-xs text-rose-500 hover:text-rose-700 underline font-medium">
+          清空所有資料
+        </button>
+        <div class="flex gap-2">
+          <button onclick="closeModal('quickSetupModal')" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl transition font-medium">
+            取消
+          </button>
+          <button onclick="applyQuickSetup()" class="px-5 py-2 bg-gradient-to-r from-pink-400 to-purple-400 hover:from-pink-500 hover:to-purple-500 text-white rounded-xl shadow-md transition font-medium active:scale-95">
+            確認套用自訂設定
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 彈窗 2：新增單一工作項目 (Single Duty Modal) -->
+  <!-- ========================================== -->
+  <div id="addSingleDutyModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm hidden p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-purple-100 flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+          <span id="singleDutyModalIcon">➕</span> <span id="singleDutyModalTitle">新增掃地項目</span>
+        </h3>
+        <button onclick="closeModal('addSingleDutyModal')" class="text-slate-400 hover:text-slate-600 text-xl font-bold p-1">✕</button>
+      </div>
+
+      <form id="singleDutyForm" onsubmit="saveSingleDuty(event)" class="mt-4 space-y-4 text-sm">
+        <input type="hidden" id="editDutyIdInput" value="">
+        
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">工作名稱</label>
+          <input 
+            type="text" 
+            id="dutyTitleInput" 
+            required 
+            placeholder="例如：飲水機與走廊、資源回收..." 
+            class="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-300 focus:outline-none"
+          >
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">圖示 (Emoji)</label>
+            <input 
+              type="text" 
+              id="dutyEmojiInput" 
+              value="🧹" 
+              required 
+              class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-center text-lg focus:ring-2 focus:ring-purple-300 focus:outline-none"
+            >
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">需求人數</label>
+            <input 
+              type="number" 
+              id="dutyQuotaInput" 
+              min="1" 
+              max="20" 
+              value="2" 
+              required 
+              class="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-300 focus:outline-none"
+            >
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-medium text-slate-700 mb-1.5">馬卡龍卡片顏色</label>
+          <div class="grid grid-cols-6 gap-2" id="singleColorPicker">
+            <!-- 顏色選項 -->
+          </div>
+        </div>
+
+        <div class="mt-6 pt-3 border-t border-slate-100 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('addSingleDutyModal')" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl transition font-medium">
+            取消
+          </button>
+          <button type="submit" class="px-5 py-2 bg-gradient-to-r from-purple-400 to-pink-400 hover:from-purple-500 hover:to-pink-500 text-white rounded-xl shadow-md transition font-medium active:scale-95">
+            儲存項目
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JavaScript 核心程式邏輯 -->
+  <script>
+    const MACARON_THEMES = [
+      { key: 'pink', name: '草莓粉', bg: 'bg-[#FFF0F3]', border: 'border-pink-200', text: 'text-pink-700', badge: 'bg-pink-100 text-pink-600', hoverSlot: 'hover:border-pink-300 hover:bg-pink-50/50' },
+      { key: 'blue', name: '海鹽藍', bg: 'bg-[#F0F9FF]', border: 'border-sky-200', text: 'text-sky-700', badge: 'bg-sky-100 text-sky-600', hoverSlot: 'hover:border-sky-300 hover:bg-sky-50/50' },
+      { key: 'green', name: '薄荷綠', bg: 'bg-[#F0FDF4]', border: 'border-emerald-200', text: 'text-emerald-700', badge: 'bg-emerald-100 text-emerald-600', hoverSlot: 'hover:border-emerald-300 hover:bg-emerald-50/50' },
+      { key: 'purple', name: '香芋紫', bg: 'bg-[#FAF5FF]', border: 'border-purple-200', text: 'text-purple-700', badge: 'bg-purple-100 text-purple-600', hoverSlot: 'hover:border-purple-300 hover:bg-purple-50/50' },
+      { key: 'yellow', name: '奶油黃', bg: 'bg-[#FEFCE8]', border: 'border-yellow-200', text: 'text-amber-700', badge: 'bg-yellow-100 text-amber-700', hoverSlot: 'hover:border-yellow-300 hover:bg-yellow-50/50' },
+      { key: 'peach', name: '蜜桃橘', bg: 'bg-[#FFF7ED]', border: 'border-orange-200', text: 'text-orange-700', badge: 'bg-orange-100 text-orange-600', hoverSlot: 'hover:border-orange-300 hover:bg-orange-50/50' }
+    ];
+
+    let currentAreaFilter = 'all';
+
+    let state = {
+      className: "班級掃地分配",
+      selectedStudentId: null,
+      students: [
+        { id: "s1", name: "01 江秉翰", dutyId: null },
+        { id: "s2", name: "02 李秉秦", dutyId: null },
+        { id: "s3", name: "03 李銘研", dutyId: null },
+        { id: "s4", name: "04 林志祥", dutyId: null },
+        { id: "s5", name: "05 邱彥宇", dutyId: null },
+        { id: "s6", name: "06 施叡廷", dutyId: null },
+        { id: "s8", name: "08 陳冠和", dutyId: null },
+        { id: "s9", name: "09 陳威畯", dutyId: null },
+        { id: "s10", name: "10 詹銳聖", dutyId: null },
+        { id: "s11", name: "11 劉庭羽", dutyId: null },
+        { id: "s13", name: "13 賴尚臨", dutyId: null },
+        { id: "s14", name: "14 引淑娜", dutyId: null },
+        { id: "s15", name: "15 王婕恩", dutyId: null },
+        { id: "s16", name: "16 王嫄喬", dutyId: null },
+        { id: "s17", name: "17 李品霏", dutyId: null },
+        { id: "s18", name: "18 沈采婷", dutyId: null },
+        { id: "s19", name: "19 林樞沅", dutyId: null },
+        { id: "s20", name: "20 姜睿欣", dutyId: null },
+        { id: "s21", name: "21 馬妮可", dutyId: null },
+        { id: "s22", name: "22 陳亞柔", dutyId: null },
+        { id: "s23", name: "23 陳孟彤", dutyId: null },
+        { id: "s24", name: "24 陳芷芸", dutyId: null },
+        { id: "s26", name: "26 湯佳穎", dutyId: null },
+        { id: "s27", name: "27 黃千瑜", dutyId: null },
+        { id: "s28", name: "28 黃聿菲", dutyId: null },
+        { id: "s29", name: "29 黃妍睿", dutyId: null },
+        { id: "s30", name: "30 黃靖恩", dutyId: null },
+        { id: "s31", name: "31 黃馨玄", dutyId: null },
+        { id: "s32", name: "32 楊澄心", dutyId: null },
+        { id: "s33", name: "33 蔡沂真", dutyId: null },
+        { id: "s34", name: "34 蔣慎宜", dutyId: null },
+        { id: "s35", name: "35 蕭立婕", dutyId: null },
+        { id: "s36", name: "36 戴妤璇", dutyId: null },
+        { id: "s37", name: "37 簡家穎", dutyId: null },
+        { id: "s38", name: "38 謝淯甯", dutyId: null },
+        { id: "s39", name: "39 王芯亞", dutyId: null }
+      ],
+      duties: [
+        /* 內掃區 (共 17 人) */
+        { id: "d1", area: "內掃區", title: "教室(掃+拖)", icon: "🧹", quota: 3, color: "blue" },
+        { id: "d2", area: "內掃區", title: "黑板+講桌+電腦桌+板擦機+板溝(整理+擦拭)", icon: "🧽", quota: 4, color: "pink" },
+        { id: "d3", area: "內掃區", title: "前走廊(掃+拖)", icon: "🚪", quota: 1, color: "green" },
+        { id: "d4", area: "內掃區", title: "後走廊(掃+拖)", icon: "🚪", quota: 1, color: "green" },
+        { id: "d5", area: "內掃區", title: "各種回收(塑膠/紙餐盒天天倒)", icon: "♻️", quota: 5, color: "yellow" },
+        { id: "d6", area: "內掃區", title: "一般垃圾(一周一次)", icon: "🗑️", quota: 1, color: "peach" },
+        { id: "d7", area: "內掃區", title: "廚餘(每天中午要刷洗)", icon: "🍲", quota: 2, color: "purple" },
+        
+        /* 外掃區 (共 19 人，合計 36 人) */
+        { id: "d8", area: "外掃區", title: "316教室旁男廁(收垃圾+刷便斗)", icon: "🚹", quota: 4, color: "blue" },
+        { id: "d9", area: "外掃區", title: "316教室旁殘障廁所", icon: "♿", quota: 2, color: "peach" },
+        { id: "d10", area: "外掃區", title: "316教室旁女廁(收垃圾+刷便斗)", icon: "🚺", quota: 4, color: "pink" },
+        { id: "d11", area: "外掃區", title: "316教室旁女廁(倒垃圾+洗手台)", icon: "🧻", quota: 4, color: "purple" },
+        { id: "d12", area: "外掃區", title: "316廁所走廊(掃+拖)", icon: "🧹", quota: 3, color: "green" },
+        { id: "d13", area: "外掃區", title: "316洗手台", icon: "🧼", quota: 2, color: "yellow" }
+      ]
+    };
+
+    function filterArea(area) {
+      currentAreaFilter = area;
+      ['all', 'inner', 'outer'].forEach(k => {
+        const btn = document.getElementById(`filter-btn-${k}`);
+        if (!btn) return;
+        btn.className = 'px-3 py-1 rounded-lg text-slate-500 hover:text-purple-600 transition';
+      });
+
+      if (area === 'all') {
+        document.getElementById('filter-btn-all').className = 'px-3 py-1 rounded-lg bg-white text-purple-600 shadow-xs transition';
+      } else if (area === '內掃區') {
+        document.getElementById('filter-btn-inner').className = 'px-3 py-1 rounded-lg bg-white text-purple-600 shadow-xs transition';
+      } else if (area === '外掃區') {
+        document.getElementById('filter-btn-outer').className = 'px-3 py-1 rounded-lg bg-white text-purple-600 shadow-xs transition';
+      }
+
+      renderDuties();
+    }
+
+    function renderDuties() {
+      const grid = document.getElementById('dutiesGrid');
+      
+      const displayedDuties = state.duties.filter(d => {
+        if (currentAreaFilter === 'all') return true;
+        return d.area === currentAreaFilter;
+      });
+
+      if (displayedDuties.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full py-16 text-center bg-white rounded-3xl border-2 border-dashed border-slate-200 p-8">
+            <span class="text-4xl">🧹</span>
+            <h3 class="text-slate-700 font-bold mt-2">此區域無工作項目</h3>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = displayedDuties.map(duty => {
+        const theme = MACARON_THEMES.find(t => t.key === duty.color) || MACARON_THEMES[0];
+        const assignedStudents = state.students.filter(s => s.dutyId === duty.id);
+        const isFull = assignedStudents.length >= duty.quota;
+        const isInner = duty.area === '內掃區';
+
+        // 產生工作位置 (Slots)
+        let slotsHtml = '';
+        for (let i = 0; i < duty.quota; i++) {
+          const student = assignedStudents[i];
+          if (student) {
+            slotsHtml += `
+              <div 
+                class="relative bg-white border-2 border-slate-200/90 rounded-2xl p-2.5 flex items-center justify-between shadow-xs transition hover:shadow group/slot"
+                draggable="true"
+                ondragstart="dragStudent(event, '${student.id}')"
+              >
+                <div class="flex items-center gap-2 overflow-hidden">
+                  <div class="w-6 h-6 rounded-full bg-pink-100 text-pink-700 flex items-center justify-center text-xs font-bold shrink-0">
+                    ${i + 1}
+                  </div>
+                  <span class="text-xs sm:text-sm font-semibold text-slate-700 truncate">${escapeHTML(student.name)}</span>
+                </div>
+                <button 
+                  onclick="event.stopPropagation(); unassignStudent('${student.id}')" 
+                  class="text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-full w-6 h-6 flex items-center justify-center text-xs transition"
+                  title="移除並移回待分配池"
+                >
+                  ✕
+                </button>
+              </div>
+            `;
+          } else {
+            // 空空格 (Drop Zone)
+            slotsHtml += `
+              <div 
+                class="border-2 border-dashed border-slate-300/70 rounded-2xl p-2.5 flex items-center justify-center gap-1.5 text-xs text-slate-400 bg-white/40 cursor-pointer transition ${theme.hoverSlot}"
+                ondragover="allowDrop(event)" 
+                ondrop="dropToDuty(event, '${duty.id}')"
+                ondragenter="this.classList.add('slot-drag-over')"
+                ondragleave="this.classList.remove('slot-drag-over')"
+                onclick="handleSlotClick('${duty.id}')"
+                title="點擊或拖入指派"
+              >
+                <span class="text-slate-300 text-sm">➕</span>
+                <span>點擊 / 拖入指派 (${i + 1})</span>
+              </div>
+            `;
+          }
+        }
+
+        return `
+          <div 
+            id="duty-card-${duty.id}"
+            class="${theme.bg} ${theme.border} border-2 rounded-3xl p-5 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between relative group"
+            ondragover="allowDrop(event)"
+            ondrop="dropToDuty(event, '${duty.id}')"
+          >
+            <!-- 卡片頂部標題與管理 -->
+            <div>
+              <div class="flex items-start justify-between gap-2 mb-3">
+                <div class="flex items-center gap-2.5">
+                  <span class="text-2xl p-2 bg-white rounded-2xl shadow-xs border border-slate-100 select-none">${duty.icon}</span>
+                  <div>
+                    <div class="flex items-center gap-1.5 mb-0.5">
+                      <span class="text-[10px] px-2 py-0.5 rounded-md font-bold ${isInner ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'}">
+                        ${duty.area || '一般'}
+                      </span>
+                    </div>
+                    <h3 onclick="promptEditDutyTitle('${duty.id}')" class="font-bold text-slate-800 text-sm sm:text-base cursor-pointer hover:text-pink-600 transition leading-snug" title="點擊直接修改工作名稱">
+                      ${escapeHTML(duty.title)} ✏️
+                    </h3>
+                    <div class="flex items-center gap-1.5 mt-1">
+                      <span onclick="promptEditDutyQuota('${duty.id}')" class="text-[11px] px-2 py-0.5 rounded-full font-bold cursor-pointer hover:opacity-80 transition ${isFull ? 'bg-emerald-100 text-emerald-700' : theme.badge}" title="點擊修改需求人數">
+                        ${assignedStudents.length} / ${duty.quota} 人 ${isFull ? '✓ 已滿' : ''} ⚙️
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 編輯/刪除小工具 -->
+                <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 no-print">
+                  <button onclick="editSingleDutyModal('${duty.id}')" class="p-1 text-slate-400 hover:text-purple-600 rounded-lg text-xs" title="完整編輯">⚙️</button>
+                  <button onclick="deleteDuty('${duty.id}')" class="p-1 text-slate-400 hover:text-rose-500 rounded-lg text-xs" title="刪除工作項目">🗑️</button>
+                </div>
+              </div>
+
+              <!-- 名額格子列表 -->
+              <div class="space-y-2 mt-4">
+                ${slotsHtml}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 更新各項統計數據
+    function updateStats() {
+      const totalQuota = state.duties.reduce((sum, d) => sum + Number(d.quota), 0);
+      const assignedCount = state.students.filter(s => s.dutyId !== null).length;
+      
+      document.getElementById('dutyTotalTypes').textContent = state.duties.length;
+      document.getElementById('dutyTotalQuota').textContent = totalQuota;
+      document.getElementById('dutyAssignedCount').textContent = assignedCount;
+
+      const percentage = totalQuota > 0 ? Math.min(100, Math.round((assignedCount / totalQuota) * 100)) : 0;
+      document.getElementById('overallProgressText').textContent = `進度 ${percentage}% (${assignedCount}/${totalQuota})`;
+
+      if (percentage === 100 && totalQuota > 0 && assignedCount >= totalQuota) {
+        triggerCelebration();
+      }
+    }
+
+    // ==========================================
+    // 拖拉 (Drag and Drop) 與點選指派邏輯
+    // ==========================================
+    function dragStudent(event, studentId) {
+      event.dataTransfer.setData('text/plain', studentId);
+      event.dataTransfer.effectAllowed = 'move';
+      
+      const tag = document.getElementById(`student-${studentId}`);
+      if (tag) tag.classList.add('opacity-40');
+    }
+
+    function allowDrop(event) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+    }
+
+    function dropToDuty(event, dutyId) {
+      event.preventDefault();
+      const studentId = event.dataTransfer.getData('text/plain');
+      if (studentId) assignStudent(studentId, dutyId);
+    }
+
+    function dropToPool(event) {
+      event.preventDefault();
+      const studentId = event.dataTransfer.getData('text/plain');
+      if (studentId) unassignStudent(studentId);
+    }
+
+    function assignStudent(studentId, dutyId) {
+      const duty = state.duties.find(d => d.id === dutyId);
+      const student = state.students.find(s => s.id === studentId);
+      if (!duty || !student) return;
+
+      const currentAssigned = state.students.filter(s => s.dutyId === dutyId);
+
+      // 若該工作已滿，且學生非原崗位，提示已滿
+      if (currentAssigned.length >= duty.quota && student.dutyId !== dutyId) {
+        showToast(`「${duty.title}」已達名額上限 (${duty.quota}人)！`, '⚠️');
+        return;
+      }
+
+      student.dutyId = dutyId;
+      state.selectedStudentId = null;
+      renderAll();
+      showToast(`已指派 ${student.name} 至 ${duty.title}`, '✅');
+    }
+
+    function unassignStudent(studentId) {
+      const student = state.students.find(s => s.id === studentId);
+      if (student && student.dutyId) {
+        student.dutyId = null;
+        renderAll();
+        showToast(`已將 ${student.name} 移回待分配池`, '↩️');
+      }
+    }
+
+    // 點擊模式：先點名字
+    function handleStudentClick(studentId) {
+      if (state.selectedStudentId === studentId) {
+        state.selectedStudentId = null;
+      } else {
+        state.selectedStudentId = studentId;
+        const student = state.students.find(s => s.id === studentId);
+        showToast(`已選取 ${student.name}，請點擊任一空位進行指派`, '👆');
+      }
+      renderStudentPool();
+    }
+
+    // 點擊模式：再點空格
+    function handleSlotClick(dutyId) {
+      if (!state.selectedStudentId) {
+        showToast('請先從左側點選一位學生！', '💡');
+        return;
+      }
+      assignStudent(state.selectedStudentId, dutyId);
+    }
+
+    // ==========================================
+    // 批次抽籤與清空
+    // ==========================================
+    function randomAssignRemaining() {
+      const unassignedStudents = state.students.filter(s => s.dutyId === null);
+      if (unassignedStudents.length === 0) {
+        showToast('所有學生皆已分配完成！', '🎉');
+        return;
+      }
+
+      const availableDutySlots = [];
+      state.duties.forEach(duty => {
+        const count = state.students.filter(s => s.dutyId === duty.id).length;
+        const remaining = duty.quota - count;
+        for (let i = 0; i < remaining; i++) {
+          availableDutySlots.push(duty.id);
+        }
+      });
+
+      if (availableDutySlots.length === 0) {
+        showToast('所有工作項目皆已滿額！請新增工作或調整人數。', '⚠️');
+        return;
+      }
+
+      // 洗牌
+      const shuffledStudents = [...unassignedStudents].sort(() => Math.random() - 0.5);
+      const shuffledSlots = [...availableDutySlots].sort(() => Math.random() - 0.5);
+
+      const countToAssign = Math.min(shuffledStudents.length, shuffledSlots.length);
+      for (let i = 0; i < countToAssign; i++) {
+        shuffledStudents[i].dutyId = shuffledSlots[i];
+      }
+
+      renderAll();
+      showToast(`已隨機分配 ${countToAssign} 位學生！`, '🎲');
+    }
+
+    function clearAllAssignments() {
+      if (!confirm('確定要清空目前的所有工作分配嗎？（學生名單與工作項目將會保留）')) return;
+      state.students.forEach(s => s.dutyId = null);
+      state.selectedStudentId = null;
+      renderAll();
+      showToast('已清空所有分配名單！', '🔄');
+    }
+
+    // ==========================================
+    // 快速設定精靈 (Quick Setup Modal Logic)
+    // ==========================================
+    function initColorPickers() {
+      const container = document.getElementById('singleColorPicker');
+      if (container) {
+        container.innerHTML = MACARON_THEMES.map((theme, i) => `
+          <label class="cursor-pointer">
+            <input type="radio" name="singleDutyColor" value="${theme.key}" ${i === 0 ? 'checked' : ''} class="peer sr-only">
+            <div class="h-8 rounded-xl ${theme.bg} ${theme.border} border-2 peer-checked:ring-2 peer-checked:ring-purple-500 peer-checked:scale-105 transition flex items-center justify-center text-xs font-bold ${theme.text}">
+              ●
+            </div>
+          </label>
+        `).join('');
+      }
+    }
+
+    function openModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (!modal) return;
+      modal.classList.remove('hidden');
+
+      if (modalId === 'quickSetupModal') {
+        document.getElementById('setupClassNameInput').value = state.className;
+        document.getElementById('setupStudentsTextarea').value = state.students.map(s => s.name).join('\n');
+        
+        // 將工作轉化為每行文字：項目名稱 (人數)
+        const dutyLines = state.duties.map(d => `${d.icon ? d.icon + ' ' : ''}${d.title} (${d.quota})`);
+        document.getElementById('setupDutiesTextarea').value = dutyLines.join('\n');
+        
+        updateSetupCounts();
+      }
+    }
+
+    function closeModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function updateSetupCounts() {
+      const studentsText = document.getElementById('setupStudentsTextarea').value.trim();
+      const studentLines = studentsText ? studentsText.split('\n').filter(l => l.trim().length > 0) : [];
+      document.getElementById('setupStudentsCount').textContent = `${studentLines.length} 人`;
+
+      const dutiesText = document.getElementById('setupDutiesTextarea').value.trim();
+      const dutyLines = dutiesText ? dutiesText.split('\n').filter(l => l.trim().length > 0) : [];
+      
+      let totalQuota = 0;
+      dutyLines.forEach(line => {
+        const match = line.match(/\((\d+)\)/) || line.match(/(\d+)\s*人/);
+        totalQuota += match ? parseInt(match[1], 10) : 2;
+      });
+
+      document.getElementById('setupDutiesQuotaCount').textContent = `${dutyLines.length} 項目 (總需求 ${totalQuota} 人)`;
+    }
+
+    // 產生純座號
+    function generateNumberRoster(count) {
+      const list = [];
+      for (let i = 1; i <= count; i++) {
+        list.push(`${String(i).padStart(2, '0')} 號`);
+      }
+      document.getElementById('setupStudentsTextarea').value = list.join('\n');
+      updateSetupCounts();
+    }
+
+    // 載入學校常見掃地工作範本
+    function loadDefaultSchoolDuties() {
+      const sampleDuties = [
+        "🧽 黑板與講台整理 (2)",
+        "🧹 教室前區掃地 (2)",
+        "🧼 教室後區拖地 (2)",
+        "♻️ 垃圾桶與資源回收 (2)",
+        "🪣 走廊清掃與洗手台 (3)",
+        "🪟 門窗擦拭與窗溝 (2)",
+        "🪑 排桌椅與圖書櫃 (2)",
+        "🍂 外掃區環境維護 (3)"
+      ];
+      document.getElementById('setupDutiesTextarea').value = sampleDuties.join('\n');
+      updateSetupCounts();
+    }
+
+    // 套用自訂名單與工作
+    function applyQuickSetup() {
+      const newClassName = document.getElementById('setupClassNameInput').value.trim() || "班級";
+      const studentsText = document.getElementById('setupStudentsTextarea').value.trim();
+      const dutiesText = document.getElementById('setupDutiesTextarea').value.trim();
+
+      const studentLines = studentsText ? studentsText.split('\n').map(l => l.trim()).filter(l => l.length > 0) : [];
+      const dutyLines = dutiesText ? dutiesText.split('\n').map(l => l.trim()).filter(l => l.length > 0) : [];
+
+      if (studentLines.length === 0 && dutyLines.length === 0) {
+        showToast('請至少輸入學生名單或工作項目！', '⚠️');
+        return;
+      }
+
+      state.className = newClassName;
+
+      // 建立新工作清單
+      const colorKeys = MACARON_THEMES.map(t => t.key);
+      const newDuties = dutyLines.map((line, idx) => {
+        // 解析 Emoji (若有)
+        let icon = "🧹";
+        let cleanLine = line;
+        
+        // 檢查開頭是否有 Emoji
+        const emojiMatch = line.match(/^(\p{Extended_Pictographic})/u);
+        if (emojiMatch) {
+          icon = emojiMatch[1];
+          cleanLine = line.replace(emojiMatch[1], '').trim();
+        }
+
+        // 解析人數
+        let quota = 2;
+        const quotaMatch = cleanLine.match(/\((\d+)\)/) || cleanLine.match(/(\d+)\s*人/);
+        if (quotaMatch) {
+          quota = parseInt(quotaMatch[1], 10);
+          cleanLine = cleanLine.replace(/\(\d+\)/g, '').replace(/\d+\s*人/g, '').trim();
+        }
+
+        const title = cleanLine || `工作項目 ${idx + 1}`;
+        const color = colorKeys[idx % colorKeys.length];
+
+        return {
+          id: `duty-${Date.now()}-${idx}`,
+          title: title,
+          icon: icon,
+          quota: Math.max(1, quota),
+          color: color
+        };
+      });
+
+      // 建立新學生名單
+      const newStudents = studentLines.map((name, idx) => ({
+        id: `std-${Date.now()}-${idx}`,
+        name: name,
+        dutyId: null
+      }));
+
+      state.duties = newDuties;
+      state.students = newStudents;
+      state.selectedStudentId = null;
+
+      closeModal('quickSetupModal');
+      renderAll();
+      showToast('已成功套用您的專屬名單與工作！', '🎉');
+    }
+
+    function clearAllData() {
+      if (!confirm('確定要清空目前的全部學生名單與掃地項目嗎？')) return;
+      document.getElementById('setupStudentsTextarea').value = '';
+      document.getElementById('setupDutiesTextarea').value = '';
+      updateSetupCounts();
+    }
+
+    // ==========================================
+    // 快速編輯與單項管理
+    // ==========================================
+    function promptChangeClassName() {
+      const name = prompt('請輸入班級名稱：', state.className);
+      if (name && name.trim()) {
+        state.className = name.trim();
+        renderAll();
+      }
+    }
+
+    function promptEditDutyTitle(dutyId) {
+      const duty = state.duties.find(d => d.id === dutyId);
+      if (!duty) return;
+      const newTitle = prompt(`請輸入「${duty.title}」的新工作名稱：`, duty.title);
+      if (newTitle && newTitle.trim()) {
+        duty.title = newTitle.trim();
+        renderAll();
+        showToast('工作名稱已更新！', '✏️');
+      }
+    }
+
+    function promptEditDutyQuota(dutyId) {
+      const duty = state.duties.find(d => d.id === dutyId);
+      if (!duty) return;
+      const newQuota = prompt(`請輸入「${duty.title}」的需求人數：`, duty.quota);
+      if (newQuota !== null) {
+        const parsed = parseInt(newQuota, 10);
+        if (!isNaN(parsed) && parsed >= 1 && parsed <= 20) {
+          duty.quota = parsed;
+          renderAll();
+          showToast('需求人數已更新！', '✏️');
+        } else {
+          showToast('請輸入 1 到 20 之間的有效數字！', '⚠️');
+        }
+      }
+    }
+
+    function editSingleDutyModal(dutyId) {
+      const duty = state.duties.find(d => d.id === dutyId);
+      if (!duty) return;
+
+      document.getElementById('editDutyIdInput').value = duty.id;
+      document.getElementById('dutyTitleInput').value = duty.title;
+      document.getElementById('dutyEmojiInput').value = duty.icon;
+      document.getElementById('dutyQuotaInput').value = duty.quota;
+
+      const radio = document.querySelector(`input[name="singleDutyColor"][value="${duty.color}"]`);
+      if (radio) radio.checked = true;
+
+      document.getElementById('singleDutyModalTitle').textContent = '編輯掃地項目';
+      document.getElementById('singleDutyModalIcon').textContent = '✏️';
+      openModal('addSingleDutyModal');
+    }
+
+    function deleteDuty(dutyId) {
+      const duty = state.duties.find(d => d.id === dutyId);
+      if (!duty) return;
+      if (!confirm(`確定要刪除「${duty.title}」嗎？`)) return;
+
+      state.students.forEach(s => {
+        if (s.dutyId === dutyId) s.dutyId = null;
+      });
+
+      state.duties = state.duties.filter(d => d.id !== dutyId);
+      renderAll();
+      showToast(`已刪除「${duty.title}」`, '🗑️');
+    }
+
+    function saveSingleDuty(event) {
+      event.preventDefault();
+      const editId = document.getElementById('editDutyIdInput').value;
+      const title = document.getElementById('dutyTitleInput').value.trim();
+      const icon = document.getElementById('dutyEmojiInput').value.trim() || '🧹';
+      const quota = parseInt(document.getElementById('dutyQuotaInput').value, 10) || 2;
+      const color = document.querySelector('input[name="singleDutyColor"]:checked')?.value || 'pink';
+
+      if (editId) {
+        const duty = state.duties.find(d => d.id === editId);
+        if (duty) {
+          duty.title = title;
+          duty.icon = icon;
+          duty.quota = quota;
+          duty.color = color;
+        }
+        showToast('工作項目已更新！', '✏️');
+      } else {
+        state.duties.push({
+          id: `duty-${Date.now()}`,
+          title,
+          icon,
+          quota,
+          color
+        });
+        showToast('已新增掃地工作項目！', '➕');
+      }
+
+      document.getElementById('singleDutyForm').reset();
+      document.getElementById('editDutyIdInput').value = '';
+      closeModal('addSingleDutyModal');
+      renderAll();
+    }
+
+    // ==========================================
+    // 輔助特效與 Toast 提示
+    // ==========================================
+    function triggerCelebration() {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 90,
+          spread: 80,
+          origin: { y: 0.6 },
+          colors: ['#FFD1DC', '#BAE6FD', '#C6F6D5', '#E9D8FD', '#FEF08A']
+        });
+      }
+    }
+
+    let toastTimer;
+    function showToast(msg, icon = '✨') {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').textContent = msg;
+      document.getElementById('toastIcon').textContent = icon;
+      
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    function escapeHTML(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>
